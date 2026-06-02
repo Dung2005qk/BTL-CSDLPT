@@ -1,0 +1,26 @@
+{
+  "name": "csdlpt",
+  "version": "2.0.0",
+  "description": "Hệ thống bán hàng trực tuyến đa kho — Demo 3 laptop SQL Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dung2005qk/CSDLPT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Dung2005qk/CSDLPT/issues"
+  },
+  "homepage": "https://github.com/Dung2005qk/CSDLPT#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "mssql": "^11.0.1"
+  }
+}

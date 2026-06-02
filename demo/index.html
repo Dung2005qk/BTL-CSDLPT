@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống bán hàng đa kho — Bảng điều khiển</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --sidebar-bg: #1b2838;
+            --sidebar-hover: #2a3f5f;
+            --sidebar-active: #3a7bd5;
+            --content-bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #6c757d;
+            --border: #dee2e6;
+            --table-header: #f8f9fa;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #e8a317;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--content-bg);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            color: #c8d6e5;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 28px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+
+        .sidebar-header h1 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: .3px;
+        }
+
+        .sidebar-header p {
+            font-size: 11px;
+            color: #8899a6;
+            margin-top: 4px;
+        }
+
+        .sidebar-nav { padding: 12px 0; flex: 1; }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 10px 20px;
+            color: #8899a6;
+            text-decoration: none;
+            font-size: 13px;
+            border-left: 3px solid transparent;
+            transition: all .15s;
+            cursor: pointer;
+        }
+
+        .sidebar-nav a:hover {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(58,123,213,.12);
+            color: #fff;
+            border-left-color: var(--sidebar-active);
+            font-weight: 500;
+        }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,.08);
+            font-size: 11px;
+            color: #556677;
+        }
+
+        /* === MAIN === */
+        .main { margin-left: 240px; flex: 1; padding: 28px 32px; }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+
+        /* === CARDS === */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+
+        .site-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 20px;
+            border-top: 3px solid var(--sidebar-active);
+        }
+
+        .site-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .site-card .label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            margin-bottom: 4px;
+        }
+
+        .site-card .value { font-size: 13px; margin-bottom: 10px; }
+        .site-card .fragments { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
+        .site-card .fragments code {
+            background: var(--table-header);
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+
+        /* === TABLE === */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            background: var(--table-header);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            color: var(--text-secondary);
+        }
+        tr:hover td { background: #f8f9ff; }
+        td code {
+            background: var(--table-header);
+            padding: 1px 5px;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        /* === QUERY === */
+        .query-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+        .query-tab {
+            padding: 10px 18px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all .15s;
+        }
+        .query-tab:hover { color: var(--text-primary); }
+        .query-tab.active {
+            color: var(--sidebar-active);
+            border-bottom-color: var(--sidebar-active);
+            font-weight: 500;
+        }
+
+        .query-content { display: none; padding-top: 20px; }
+        .query-content.active { display: block; }
+
+        .query-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+        pre.sql-code {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            font-family: "Cascadia Code", "Fira Code", monospace;
+            margin-bottom: 16px;
+        }
+        pre.sql-code .kw { color: #569cd6; }
+        pre.sql-code .fn { color: #dcdcaa; }
+        pre.sql-code .str { color: #ce9178; }
+        pre.sql-code .cm { color: #6a9955; font-style: italic; }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all .15s;
+        }
+        .btn-primary { background: var(--sidebar-active); color: #fff; }
+        .btn-primary:hover { background: #2a6ac0; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #c82333; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        
+        .btn-reset {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #8899a6;
+            width: 100%;
+            padding: 6px;
+            font-size: 11px;
+            border-radius: 3px;
+        }
+        .btn-reset:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border-color: rgba(255,255,255,0.22);
+        }
+
+        .exec-time {
+            display: inline-block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 12px;
+        }
+        .exec-time span { font-weight: 600; color: var(--success); }
+
+        .result-area { margin-top: 16px; }
+
+        /* === TRANSACTION SIMULATOR === */
+        .sim-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+
+        .sim-form label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .sim-form input, .sim-form select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            font-family: inherit;
+        }
+
+        .sim-form input:focus, .sim-form select:focus {
+            outline: none;
+            border-color: var(--sidebar-active);
+        }
+
+        .tx-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 4px;
+            font-family: "Cascadia Code", "Fira Code", monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            min-height: 300px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        .tx-log .ts { color: #6a9955; }
+        .tx-log .ok { color: #4ec9b0; }
+        .tx-log .err { color: #f44747; }
+        .tx-log .lock { color: #569cd6; }
+        .tx-log .phase { color: #dcdcaa; }
+
+        /* === PERFORMANCE === */
+        .perf-item { margin-bottom: 28px; }
+        .perf-item h4 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+        .perf-bar-group { margin-bottom: 8px; }
+
+        .perf-bar-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .perf-bar {
+            height: 24px;
+            background: var(--table-header);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .perf-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width .8s ease;
+        }
+
+        .fill-distributed { background: var(--sidebar-active); }
+        .fill-centralized { background: #8899a6; }
+
+        /* === PAGES === */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .status-dot {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-online { background: var(--success); }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>Hệ thống bán hàng đa kho</h1>
+        <p>3 Laptop SQL Server — Radmin VPN</p>
+    </div>
+    <nav class="sidebar-nav">
+        <a class="active" data-page="overview">Tổng quan</a>
+        <a data-page="queries">Truy vấn phân tán</a>
+        <a data-page="transactions">Giả lập giao dịch</a>
+        <a data-page="performance">Hiệu năng</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div style="margin-bottom:8px">Báo cáo CSDL phân tán &bull; 2026</div>
+        <button class="btn btn-reset" onclick="resetData()">Reset dữ liệu</button>
+        <button class="btn btn-reset" style="margin-top:6px" onclick="reset2PC()">Reset cho 2PC</button>
+    </div>
+</aside>
+
+<main class="main">
+
+    <!-- ===== TỔNG QUAN ===== -->
+    <div class="page active" id="page-overview">
+        <h2 class="page-title">Tổng quan hệ thống</h2>
+        <div class="grid-3">
+            <div class="site-card">
+                <h3><span class="status-dot" id="dot-S1"></span>Site 1 — Miền Bắc</h3>
+                <div class="label">Hostname / IP</div>
+                <div class="value">LAPTOP-M3FKU757 (26.48.50.240)</div>
+                <div class="label">Kho hàng</div>
+                <div class="value">K001, K002, K003</div>
+                <div class="label">Mảnh dữ liệu</div>
+                <div class="fragments">
+                    <code>KHO</code> <code>KHACHHANG</code> <code>TONKHO</code><br>
+                    <code>DONHANG</code> <code>CHITIETDONHANG</code><br>
+                    <code>SP_PUBLIC</code> <code>SP_DETAIL</code> <code>DANHMUC</code>
+                </div>
+            </div>
+            <div class="site-card">
+                <h3><span class="status-dot" id="dot-S2"></span>Site 2 — Miền Trung</h3>
+                <div class="label">Hostname / IP</div>
+                <div class="value">DESKTOP-Q5G45CD (26.99.23.250)</div>
+                <div class="label">Kho hàng</div>
+                <div class="value">K004, K005, K006</div>
+                <div class="label">Mảnh dữ liệu</div>
+                <div class="fragments">
+                    <code>KHO</code> <code>KHACHHANG</code> <code>TONKHO</code><br>
+                    <code>DONHANG</code> <code>CHITIETDONHANG</code><br>
+                    <code>SP_PUBLIC</code> <code>DANHMUC</code>
+                </div>
+            </div>
+            <div class="site-card">
+                <h3><span class="status-dot" id="dot-S3"></span>Site 3 — Miền Nam</h3>
+                <div class="label">Hostname / IP</div>
+                <div class="value">LAPTOP-UD52TRL3 (26.209.72.20)</div>
+                <div class="label">Kho hàng</div>
+                <div class="value">K007, K008, K009</div>
+                <div class="label">Mảnh dữ liệu</div>
+                <div class="fragments">
+                    <code>KHO</code> <code>KHACHHANG</code> <code>TONKHO</code><br>
+                    <code>DONHANG</code> <code>CHITIETDONHANG</code><br>
+                    <code>SP_PUBLIC</code> <code>DANHMUC</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Thống kê dữ liệu toàn cục</div>
+            <table>
+                <thead><tr><th>Bảng</th><th>Tổng bản ghi</th><th>S1 (MB)</th><th>S2 (MT)</th><th>S3 (MN)</th><th>Chiến lược</th></tr></thead>
+                <tbody>
+                    <tr><td>DANHMUC</td><td>6</td><td>6</td><td>6</td><td>6</td><td>Nhân bản đầy đủ</td></tr>
+                    <tr><td>SP_PUBLIC</td><td>30</td><td>30</td><td>30</td><td>30</td><td>Nhân bản đầy đủ</td></tr>
+                    <tr><td>SP_DETAIL</td><td>30</td><td>30</td><td>—</td><td>—</td><td>Tập trung tại S1</td></tr>
+                    <tr><td>KHO</td><td>9</td><td>3</td><td>3</td><td>3</td><td>Phân mảnh ngang</td></tr>
+                    <tr><td>KHACHHANG</td><td>18</td><td>6</td><td>6</td><td>6</td><td>Phân mảnh ngang</td></tr>
+                    <tr><td>TONKHO</td><td>72</td><td>24</td><td>24</td><td>24</td><td>Dẫn xuất theo KHO</td></tr>
+                    <tr><td>DONHANG</td><td>45</td><td>15</td><td>15</td><td>15</td><td>Dẫn xuất theo KH</td></tr>
+                    <tr><td>CHITIETDONHANG</td><td>90</td><td>30</td><td>30</td><td>30</td><td>Dẫn xuất theo DH</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== TRUY VẤN PHÂN TÁN ===== -->
+    <div class="page" id="page-queries">
+        <h2 class="page-title">Truy vấn phân tán</h2>
+        <div class="card">
+            <div class="query-tabs">
+                <button class="query-tab active" data-q="1">Truy vấn 1</button>
+                <button class="query-tab" data-q="2">Truy vấn 2</button>
+                <button class="query-tab" data-q="3">Truy vấn 3</button>
+                <button class="query-tab" data-q="4">Truy vấn 4</button>
+                <button class="query-tab" data-q="5">Truy vấn 5</button>
+            </div>
+
+            <div class="query-content active" id="q1">
+                <p class="query-desc">Sản phẩm còn hàng tại kho miền Bắc. Cục bộ hóa hoàn toàn tại S1, chi phí truyền thông = 0.</p>
+                <pre class="sql-code"><span class="cm">-- Thực thi tại Site 1 (cục bộ hoàn toàn)</span>
+<span class="kw">SELECT</span> SP.TenSP, TK.SoLuongTon
+<span class="kw">FROM</span> SP_PUBLIC SP
+<span class="kw">JOIN</span> TONKHO_MB TK <span class="kw">ON</span> SP.MaSP = TK.MaSP
+<span class="kw">JOIN</span> KHO_MB K <span class="kw">ON</span> TK.MaKho = K.MaKho;</pre>
+                <button class="btn btn-primary" onclick="runQuery(1)">Thực thi</button>
+                <span class="exec-time" id="time-1"></span>
+                <div class="result-area" id="result-1"></div>
+            </div>
+
+            <div class="query-content" id="q2">
+                <p class="query-desc">Tổng tồn kho SP001 trên toàn hệ thống. Tổng hợp cục bộ tại mỗi trạm, truyền 3 giá trị số.</p>
+                <pre class="sql-code"><span class="cm">-- Tổng hợp cục bộ: mỗi trạm gửi 1 giá trị</span>
+<span class="kw">SELECT</span> <span class="fn">SUM</span>(TonCucBo) <span class="kw">AS</span> TongTonKho
+<span class="kw">FROM</span> (
+    <span class="kw">SELECT</span> <span class="fn">SUM</span>(SoLuongTon) <span class="kw">AS</span> TonCucBo <span class="kw">FROM</span> TONKHO_MB <span class="kw">WHERE</span> MaSP = <span class="str">'SP001'</span>
+    <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> <span class="fn">SUM</span>(SoLuongTon) <span class="kw">FROM</span> TONKHO_MT <span class="kw">WHERE</span> MaSP = <span class="str">'SP001'</span>
+    <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> <span class="fn">SUM</span>(SoLuongTon) <span class="kw">FROM</span> TONKHO_MN <span class="kw">WHERE</span> MaSP = <span class="str">'SP001'</span>
+) <span class="kw">AS</span> KetQua;</pre>
+                <button class="btn btn-primary" onclick="runQuery(2)">Thực thi</button>
+                <span class="exec-time" id="time-2"></span>
+                <div class="result-area" id="result-2"></div>
+            </div>
+
+            <div class="query-content" id="q3">
+                <p class="query-desc">Đơn hàng miền Nam xuất từ kho miền Bắc (chéo vùng). Phép nối nửa: chỉ truyền tập khóa MaKho từ S1.</p>
+                <pre class="sql-code"><span class="cm">-- Semijoin: chỉ truyền π(MaKho) từ S1 → S3</span>
+<span class="kw">SELECT DISTINCT</span> D.MaDH
+<span class="kw">FROM</span> DONHANG_MN D
+<span class="kw">JOIN</span> CTDH_MN C <span class="kw">ON</span> D.MaDH = C.MaDH
+<span class="kw">WHERE</span> C.MaKhoXuat <span class="kw">IN</span> (
+    <span class="kw">SELECT</span> MaKho <span class="kw">FROM</span> KHO_MB
+);</pre>
+                <button class="btn btn-primary" onclick="runQuery(3)">Thực thi</button>
+                <span class="exec-time" id="time-3"></span>
+                <div class="result-area" id="result-3"></div>
+            </div>
+
+            <div class="query-content" id="q4">
+                <p class="query-desc">Doanh thu theo kho trong tháng hiện tại. Tổng hợp cục bộ 2 giai đoạn: GROUP BY tại mỗi trạm, gom cuối tại điều phối.</p>
+                <pre class="sql-code"><span class="cm">-- Gom nhóm cục bộ tại 3 trạm → tổng hợp cuối</span>
+<span class="kw">SELECT</span> MaKhoXuat, <span class="fn">SUM</span>(DoanhThuCucBo) <span class="kw">AS</span> DoanhThu
+<span class="kw">FROM</span> (
+    <span class="kw">SELECT</span> C.MaKhoXuat, <span class="fn">SUM</span>(C.SoLuong * C.DonGia) <span class="kw">AS</span> DoanhThuCucBo
+    <span class="kw">FROM</span> CTDH_MB C <span class="kw">JOIN</span> DONHANG_MB D <span class="kw">ON</span> C.MaDH = D.MaDH
+    <span class="kw">WHERE</span> <span class="fn">MONTH</span>(D.NgayLap) = <span class="fn">MONTH</span>(<span class="fn">GETDATE</span>())
+    <span class="kw">GROUP BY</span> C.MaKhoXuat
+    <span class="kw">UNION ALL</span>  <span class="cm">-- ... S2 + S3 tương tự</span>
+) <span class="kw">AS</span> TongHop
+<span class="kw">GROUP BY</span> MaKhoXuat;</pre>
+                <button class="btn btn-primary" onclick="runQuery(4)">Thực thi</button>
+                <span class="exec-time" id="time-4"></span>
+                <div class="result-area" id="result-4"></div>
+            </div>
+
+            <div class="query-content" id="q5">
+                <p class="query-desc">Sản phẩm bán chạy nhất toàn hệ thống. Nhân bản SP_PUBLIC + tổng hợp cục bộ.</p>
+                <pre class="sql-code"><span class="cm">-- Tổng hợp MaSP cục bộ → nối SP_PUBLIC cuối</span>
+<span class="kw">SELECT</span> SP.TenSP, <span class="fn">SUM</span>(BanCucBo) <span class="kw">AS</span> TongBan
+<span class="kw">FROM</span> (
+    <span class="kw">SELECT</span> MaSP, <span class="fn">SUM</span>(SoLuong) <span class="kw">AS</span> BanCucBo <span class="kw">FROM</span> CTDH_MB <span class="kw">GROUP BY</span> MaSP
+    <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> MaSP, <span class="fn">SUM</span>(SoLuong) <span class="kw">FROM</span> CTDH_MT <span class="kw">GROUP BY</span> MaSP
+    <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> MaSP, <span class="fn">SUM</span>(SoLuong) <span class="kw">FROM</span> CTDH_MN <span class="kw">GROUP BY</span> MaSP
+) <span class="kw">AS</span> T <span class="kw">JOIN</span> SP_PUBLIC SP <span class="kw">ON</span> T.MaSP = SP.MaSP
+<span class="kw">GROUP BY</span> SP.TenSP <span class="kw">ORDER BY</span> TongBan <span class="kw">DESC</span>;</pre>
+                <button class="btn btn-primary" onclick="runQuery(5)">Thực thi</button>
+                <span class="exec-time" id="time-5"></span>
+                <div class="result-area" id="result-5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GIẢ LẬP GIAO DỊCH ===== -->
+    <div class="page" id="page-transactions">
+        <h2 class="page-title">Giả lập giao dịch</h2>
+        <div class="sim-grid">
+            <div class="card">
+                <div class="card-title">Tham số đặt hàng</div>
+                <div class="sim-form">
+                    <label>Mã khách hàng</label>
+                    <select id="tx-customer">
+                        <option value="KH01">KH01 — Nguyễn Văn An (MB)</option>
+                        <option value="KH02">KH02 — Trần Thị Bình (MB)</option>
+                        <option value="KH03">KH03 — Lê Hoàng Cường (MB)</option>
+                    </select>
+                    <label>Mã sản phẩm</label>
+                    <select id="tx-product">
+                        <option value="SP001" data-name="Laptop Dell Vostro 15">SP001 — Laptop Dell Vostro 15</option>
+                        <option value="SP002" data-name="Điện thoại Samsung Galaxy A54">SP002 — Điện thoại Samsung Galaxy A54</option>
+                        <option value="SP003" data-name="Tai nghe Bluetooth Sony">SP003 — Tai nghe Bluetooth Sony</option>
+                    </select>
+                    <label>Số lượng</label>
+                    <input type="number" id="tx-qty" value="5" min="1" max="200">
+                    <label>Kiểu giao dịch</label>
+                    <select id="tx-type">
+                        <option value="local">Cục bộ (1 trạm)</option>
+                        <option value="distributed">Liên kho (đa trạm)</option>
+                    </select>
+                    <div style="margin-top: 8px; display: flex; gap: 8px;">
+                        <button class="btn btn-primary" onclick="runTransaction()">Thực thi</button>
+                        <button class="btn btn-danger" onclick="runConcurrent()">Đồng thời x3</button>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 11px; color: var(--text-secondary);">
+                        Nút "Đồng thời x3" mô phỏng 3 giao dịch đặt cùng sản phẩm cùng lúc để kiểm thử S2PL.
+                    </p>
+                </div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column;">
+                <div class="card-title">Nhật ký giao dịch</div>
+                <div class="tx-log" id="tx-log">
+                    <div class="ts">[Hệ thống sẵn sàng]</div>
+                    <div>Chọn tham số và nhấn "Thực thi" để bắt đầu.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 0;">
+            <div class="card-title">Trạng thái tồn kho (sau giao dịch)</div>
+            <table id="inventory-table">
+                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>S1 (MB)</th><th>S2 (MT)</th><th>S3 (MN)</th><th>Tổng</th></tr></thead>
+                <tbody>
+                    <tr><td>SP001</td><td>Laptop Dell Vostro 15</td><td id="inv-sp001-s1">80</td><td id="inv-sp001-s2">35</td><td id="inv-sp001-s3">45</td><td id="inv-sp001-total">160</td></tr>
+                    <tr><td>SP002</td><td>Điện thoại Samsung Galaxy A54</td><td id="inv-sp002-s1">125</td><td id="inv-sp002-s2">55</td><td id="inv-sp002-s3">95</td><td id="inv-sp002-total">275</td></tr>
+                    <tr><td>SP003</td><td>Tai nghe Bluetooth Sony</td><td id="inv-sp003-s1">190</td><td id="inv-sp003-s2">90</td><td id="inv-sp003-s3">110</td><td id="inv-sp003-total">390</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== HIỆU NĂNG ===== -->
+    <div class="page" id="page-performance">
+        <h2 class="page-title">So sánh hiệu năng</h2>
+
+        <div class="card">
+            <div class="card-title">1. Truy vấn cục bộ: tập trung và phân mảnh ngang</div>
+            <div class="perf-item">
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Tập trung (quét 1.500.000 dòng)</span><span>320 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-centralized" style="width:100%"></div></div>
+                </div>
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Phân tán (quét 500.000 dòng tại S1)</span><span>105 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-distributed" style="width:33%"></div></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Giảm 67% I/O nhờ phân mảnh ngang. Chi phí truyền thông = 0 (cục bộ hoàn toàn).</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">2. Ảnh hưởng của nhân bản SP_PUBLIC</div>
+            <div class="perf-item">
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Không nhân bản (truyền SP qua mạng 3 lần)</span><span>180 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-centralized" style="width:100%"></div></div>
+                </div>
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Nhân bản (JOIN cục bộ tại mỗi trạm)</span><span>42 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-distributed" style="width:23%"></div></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Chi phí truyền thông cho tác vụ đọc = 0. Đánh đổi: đồng bộ khi cập nhật giá (hiếm).</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">3. Hiệu quả phép nối nửa (truy vấn 3)</div>
+            <div class="perf-item">
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Nối thông thường (truyền toàn bộ KHO₁)</span><span>85 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-centralized" style="width:100%"></div></div>
+                </div>
+                <div class="perf-bar-group">
+                    <div class="perf-bar-label"><span>Nối nửa (truyền 3 giá trị MaKho)</span><span>12 ms</span></div>
+                    <div class="perf-bar"><div class="perf-bar-fill fill-distributed" style="width:14%"></div></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Giảm 86% dữ liệu truyền qua mạng. Bộ giảm hoàn toàn loại sớm bản ghi không liên quan.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">4. Giao dịch đồng thời: có và không có S2PL</div>
+            <table>
+                <thead><tr><th>Kịch bản</th><th>Không có S2PL</th><th>Có S2PL + 2PC</th></tr></thead>
+                <tbody>
+                    <tr><td>3 đơn đồng thời, kho có 10 SP</td><td style="color:var(--danger)">Tồn kho = 4 (sai, mất cập nhật)</td><td style="color:var(--success)">Tồn kho = -8 bị chặn, chỉ 1 đơn thành công</td></tr>
+                    <tr><td>Liên kho, S2 mất kết nối</td><td style="color:var(--danger)">S1 trừ kho, S2 không trừ</td><td style="color:var(--success)">global-abort, cả 2 hoàn tác</td></tr>
+                    <tr><td>Đọc dữ liệu rác</td><td style="color:var(--danger)">Có thể xảy ra</td><td style="color:var(--success)">Không — khóa giữ đến COMMIT</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<script>
+// === Navigation ===
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        link.classList.add('active');
+        document.getElementById('page-' + link.dataset.page).classList.add('active');
+    });
+});
+
+// === Query Tabs ===
+document.querySelectorAll('.query-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.query-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.query-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('q' + tab.dataset.q).classList.add('active');
+    });
+});
+
+// === Query: gọi API thật ===
+async function runQuery(n) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Đang thực thi...';
+
+    try {
+        const res = await fetch('/api/query/' + n);
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById('result-' + n).innerHTML =
+                '<p style="color:var(--danger)">Lỗi: ' + data.error + '</p>';
+            return;
+        }
+
+        document.getElementById('time-' + n).innerHTML =
+            'Thời gian: <span>' + data.time + ' ms</span> — ' + data.technique;
+
+        if (data.rows.length === 0) {
+            document.getElementById('result-' + n).innerHTML = '<p>Không có kết quả.</p>';
+            return;
+        }
+
+        const cols = Object.keys(data.rows[0]);
+        let html = '<table><thead><tr>';
+        cols.forEach(c => html += '<th>' + c + '</th>');
+        html += '</tr></thead><tbody>';
+        data.rows.forEach(r => {
+            html += '<tr>';
+            cols.forEach(c => {
+                let v = r[c];
+                if (typeof v === 'number' && v > 1000) v = v.toLocaleString('vi-VN');
+                html += '<td>' + v + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('result-' + n).innerHTML = html;
+    } catch (err) {
+        document.getElementById('result-' + n).innerHTML =
+            '<p style="color:var(--danger)">Không kết nối được server. Kiểm tra server.js.</p>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Thực thi';
+    }
+}
+
+// === Transaction Simulator ===
+let txCounter = 0;
+
+function log(msg, cls) {
+    const el = document.getElementById('tx-log');
+    const now = new Date().toLocaleTimeString('vi-VN');
+    const clsAttr = cls ? ' class="' + cls + '"' : '';
+    el.innerHTML += '<div' + clsAttr + '><span class="ts">[' + now + ']</span> ' + msg + '</div>';
+    el.scrollTop = el.scrollHeight;
+}
+
+async function refreshInventory() {
+    const sps = ['SP001','SP002','SP003'];
+    for (const sp of sps) {
+        try {
+            const res = await fetch('/api/inventory/' + sp);
+            const d = await res.json();
+            const pre = 'inv-' + sp.toLowerCase();
+            document.getElementById(pre + '-s1').textContent = d.s1.ton;
+            document.getElementById(pre + '-s2').textContent = d.s2.ton;
+            document.getElementById(pre + '-s3').textContent = d.s3.ton;
+            document.getElementById(pre + '-total').textContent = d.total;
+        } catch(e) {}
+    }
+}
+
+function renderLog(entries) {
+    entries.forEach(e => {
+        const cls = e.type || '';
+        const typeMap = { phase: 'phase', lock: 'lock', ok: 'ok', err: 'err' };
+        const wrap = typeMap[cls];
+        let msg = e.msg;
+        if (wrap === 'lock') msg = '<span class="lock">' + msg + '</span>';
+        if (wrap === 'ok') msg = '<span class="ok">' + msg + '</span>';
+        if (wrap === 'err') msg = '<span class="err">' + msg + '</span>';
+        if (wrap === 'phase') msg = '<span class="phase">' + msg + '</span>';
+        log(msg, cls);
+    });
+}
+
+async function runTransaction() {
+    const kh = document.getElementById('tx-customer').value;
+    const sp = document.getElementById('tx-product').value;
+    const qty = parseInt(document.getElementById('tx-qty').value);
+    const type = document.getElementById('tx-type').value;
+    txCounter++;
+
+    log('─'.repeat(50));
+    log('Bắt đầu giao dịch ' + (type === 'local' ? 'CỤC BỘ' : 'LIÊN KHO') + ': ' + sp + ' x' + qty);
+
+    const endpoint = type === 'local' ? '/api/transaction/local' : '/api/transaction/distributed';
+    const body = { maKH: kh, maSP: sp, soLuong: qty, maKho: 'K001' };
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        renderLog(data.log);
+        await refreshInventory();
+    } catch (err) {
+        log('Không kết nối được server: ' + err.message, 'err');
+    }
+}
+
+async function runConcurrent() {
+    const sp = document.getElementById('tx-product').value;
+    const qty = parseInt(document.getElementById('tx-qty').value);
+    const type = document.getElementById('tx-type').value;
+
+    log('─'.repeat(50));
+    log('<span class="phase">KIỂM THỬ ĐỒNG THỜI</span>: 3 giao dịch ' + (type === 'local' ? 'CỤC BỘ' : 'LIÊN KHO') + ' cùng đặt ' + sp + ' x' + qty, 'phase');
+    log('Cơ chế S2PL: giao dịch sau phải chờ khóa được giải phóng (SELECT FOR UPDATE)');
+
+    const endpoint = type === 'local' ? '/api/transaction/local' : '/api/transaction/distributed';
+    const body = { maKH: 'KH01', maSP: sp, soLuong: qty, maKho: 'K001' };
+    const reqs = [1,2,3].map(() =>
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(r => r.json())
+    );
+
+    try {
+        const results = await Promise.all(reqs);
+        let ok = 0;
+        results.forEach((data, i) => {
+            log('─── Giao dịch T' + (++txCounter) + ' ───');
+            renderLog(data.log);
+            if (data.success) ok++;
+        });
+        log('─'.repeat(50));
+        log('Kết quả: ' + ok + ' thành công, ' + (3 - ok) + ' bị từ chối');
+        await refreshInventory();
+        log('<span class="ok">Tồn kho không âm — S2PL hoạt động đúng</span>', 'ok');
+    } catch (err) {
+        log('Lỗi: ' + err.message, 'err');
+    }
+}
+
+// Check server status
+async function checkStatus() {
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        for (const [name, info] of Object.entries(data)) {
+            const dot = document.getElementById('dot-' + name);
+            if (dot) {
+                dot.className = 'status-dot ' + (info.online ? 'status-online' : '');
+                dot.style.background = info.online ? 'var(--success)' : 'var(--danger)';
+            }
+        }
+    } catch(e) {}
+}
+
+async function resetData() {
+    if (!confirm('Reset tồn kho về giá trị ban đầu?')) return;
+    try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const d = await res.json();
+        alert(d.msg || d.error);
+        await refreshInventory();
+    } catch(e) { alert('Lỗi: ' + e.message); }
+}
+
+async function reset2PC() {
+    if (!confirm('Reset SP001: S1=4, S2=6 (cho demo 2PC)?')) return;
+    try {
+        const res = await fetch('/api/reset-2pc', { method: 'POST' });
+        const d = await res.json();
+        alert(d.msg || d.error);
+        await refreshInventory();
+    } catch(e) { alert('Lỗi: ' + e.message); }
+}
+
+// Tải dữ liệu khi mở trang
+refreshInventory();
+checkStatus();
+setInterval(checkStatus, 10000); // Poll mỗi 10 giây
+</script>
+
+</body>
+</html>
